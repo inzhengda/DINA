@@ -1,0 +1,12 @@
+No.	Skill Names
+1	Set,
+2	Inequality,
+3	Trigonometric function,
+4	Logarithm versus exponential,
+5	Plane vector,
+6	Property of function,
+7	Image of function,
+8	Spatial imagination,
+9	Abstract summarization,
+10	Reasoning and demonstration,
+11	Calculation.

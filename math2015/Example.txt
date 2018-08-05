@@ -1,0 +1,13 @@
+Here two examples about the datasets we use are given as follows:
+
+1. FrcSub dataset.
+	a. "problemdesc.txt" can tell us that all the problems are objective and the full score of each problem is 1;
+	b. From Line 1 of "data.txt", we can find that the first examinee gives correct response on Problem 4,7,8,10,11,12,14,15,16,18,19,20 and wrong response on the rest problems;
+	c. From Line 1 of "q.txt", we can find that the first problem requires skill 4,6,7;
+	d. From "qnames.txt", we can find that specifically the skills the first problem requires are "Find a common denominator", "Column borrow to subtract the second numerator from the first" and "Subtract numerators".
+
+2. Math1 dataset.
+	a. "problemdesc.txt" can tell us that Problem 1 to 15 are objective and their full scores are 4 while Problem 16 to 20 are subjective and the full scores of them are 6,8,8,9,9;
+	b. From Line 1 of "rawdata.txt", we can find that the raw scores of the first examinee on Problem 1 and 16 are 4 and 5, respectively;
+	c. In the experiments, we normalize raw scores into a value in [0,1] by dividing the full score of each problem. From Line 1 of "data.txt", we can find that the normalized scores of the first examinee on Problem 1 and 16 are 1 and 0.8333, respectively;
+	d. The usage of "q.txt" and "qnames.txt" is the same as described above in FrcSub dataset.

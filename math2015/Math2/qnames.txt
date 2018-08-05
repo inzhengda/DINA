@@ -1,0 +1,17 @@
+No.	Skill Names
+1	Property of inequality,
+2	Methods of data sampling,
+3	Geometric progression,
+4	Function versus equation,
+5	Solving triangle,
+6	Principles of data analysis,
+7	Classical probability theory,
+8	Linear programming,
+9	Definitions of algorithm,
+10	Algorithm logic,
+11	Arithmetic progression,
+12	Spatial imagination,
+13	Abstract summarization,
+14	Reasoning and demonstration,
+15	Calculation,
+16	Data handling.

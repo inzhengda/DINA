@@ -1,0 +1,10 @@
+By using the Math dataset, you agree to the following terms of use:
+
+1. Data is for research purposes, not commercial purposes.
+
+2. You will not make any attempts to de-anonymize the data.
+
+3. Please include the following reference in your publication:
+   Runze Wu, Qi Liu, Yuping Liu, Enhong Chen, Yu Su, Zhigang Chen and Guoping Hu. "Cognitive Modelling for Predicting Examinee Performance." In Proceedings of the Twenty-Fourth international joint conference on Artificial Intelligence. AAAI Press, 2015.
+or you might also cite our URL in the text of your paper:
+   For exploratory analysis, I used the Math dataset, available at http://staff.ustc.edu.cn/~qiliuql/data/math2015.rar (Runze, Qi et al., 2015).

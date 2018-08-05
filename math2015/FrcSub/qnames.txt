@@ -1,0 +1,9 @@
+No.	Skill Names
+1	Convert a whole number to a fraction,
+2	Separate a whole number from a fraction,
+3	Simplify before subtracting,
+4	Find a common denominator,
+5	Borrow from whole number part,
+6	Column borrow to subtract the second numerator from the first,
+7	Subtract numerators,
+8	Reduce answers to simplest form.

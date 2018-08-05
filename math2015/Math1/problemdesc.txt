@@ -1,0 +1,21 @@
+No.	Type	Full Score
+1	Obj	4
+2	Obj	4
+3	Obj	4
+4	Obj	4
+5	Obj	4
+6	Obj	4
+7	Obj	4
+8	Obj	4
+9	Obj	4
+10	Obj	4
+11	Obj	4
+12	Obj	4
+13	Obj	4
+14	Obj	4
+15	Obj	4
+16	Sub	6
+17	Sub	8
+18	Sub	8
+19	Sub	9
+20	Sub	9
