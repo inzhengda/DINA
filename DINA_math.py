@@ -8,7 +8,7 @@ import math
 '''
 
 # 用来测试少量的数据，减少计算等待时间
-headNum = 20
+headNum = 10
 
 
 
@@ -44,10 +44,10 @@ def trainDINAModel():
     # 可以使用head函数控制读取的学生数量
     # sample表示采样，frac=0.8表示随机采样80%的记录
     # n 表示每个学生每道题目的答题情况，1表示答对，0表示答错
-    n = pd.read_csv('math2015/FrcSub/data.csv').sample(frac=0.8)
-    # n = pd.read_csv('math2015/FrcSub/data.csv').head(headNum).sample(frac=0.8)
+    n = pd.read_csv('math2015/Math1/data.csv').sample(frac=0.8)
+    # n = pd.read_csv('math2015/Math1/data.csv').head(headNum).sample(frac=0.8)
     # Q 表示每道题目答对需要掌握的知识点向量
-    Q = pd.read_csv('math2015/FrcSub/q.csv')
+    Q = pd.read_csv('math2015/Math1/q.csv')
 
     # 536*0.8个学生,20道题目
     ni, nj = n.shape
@@ -72,6 +72,7 @@ def trainDINAModel():
         # E步，求似然矩阵
         IL = np.ones((ni, 2 ** Qj))
         # 技能模式的数量
+        print('l总数:'+str(2 ** Qj)+'i总数:'+str(ni))
         for l in range(2 ** Qj):
             # 学生的数量
             for i in range(ni):
@@ -95,6 +96,7 @@ def trainDINAModel():
                         # 实际该学生，对于k这道题确实做错了，似然函数*(1-g)
                         else:
                             IL[i][l] *= 1 - sg[k][1]
+            print('l:'+str(l))
         print("IL是训练集学生，所有技能模式的似然概率矩阵")
         print(IL)
 
@@ -108,12 +110,13 @@ def trainDINAModel():
             R0 = 0
             I1 = 0
             R1 = 0
-            #l表示每一种技能模式
+            # l表示每一种技能模式
             for l in range(2 ** Qj):
-                #i表示每一个学生
+
+                # 也需要计算k这道题，l这模式能否做对
+                nl = nTrueOrFalse((Q.iloc[k]), l)
+                # i表示每一个学生
                 for i in range(ni):
-                    #也需要计算k这道题，l这模式能否做对
-                    nl = nTrueOrFalse((Q.iloc[k]),l)
                     # I1,R1的情况，表示理论上能做对
                     if nl ==1:
                         I1 += IL[i][l]
@@ -152,10 +155,10 @@ def trainIDINAModel():
     # 可以使用head函数控制读取的学生数量
     # sample表示采样，frac=0.8表示随机采样80%的记录
     # n 表示每个学生每道题目的答题情况，1表示答对，0表示答错
-    n = pd.read_csv('math2015/FrcSub/data.csv').sample(frac=0.8)
-    # n = pd.read_csv('math2015/FrcSub/data.csv').head(headNum).sample(frac=0.8)
+    n = pd.read_csv('math2015/Math1/data.csv').sample(frac=0.8)
+    # n = pd.read_csv('math2015/Math1/data.csv').head(headNum).sample(frac=0.8)
     # Q 表示每道题目答对需要掌握的知识点向量
-    Q = pd.read_csv('math2015/FrcSub/q.csv')
+    Q = pd.read_csv('math2015/Math1/q.csv')
 
     # 536*0.8个学生,20道题目
     ni, nj = n.shape
@@ -209,12 +212,14 @@ def trainIDINAModel():
                         # 实际该学生，对于k这道题确实做错了，似然函数*(1-g)
                         else:
                             IL[i][l] *= 1 - sg[k][1]
+
+            print('l:' + str(l))
         print("IL是训练集学生，所有技能模式的似然概率矩阵")
         print(IL)
 
-        istart = istop%ni
-        istop = istart+10
-        if istop >ni:
+        istart = istop % ni
+        istop = istart + 10
+        if istop > ni:
             istop = ni
 
         # M步，求s，g
@@ -265,13 +270,13 @@ def trainIDINAModel():
 
 def testPredict():
     # 得到模型的参数，s和g
-    sg = trainDINAModel()
+    sg = trainIDINAModel()
     startTime = time.time()
     print('预测开始时间：' + str(int(startTime)))
     # 测试集随机挑选20%的数据
-    n = pd.read_csv('math2015/FrcSub/data.csv').sample(frac=0.2)
-    # n = pd.read_csv('math2015/FrcSub/data.csv').head(headNum).sample(frac=0.2)
-    Q = pd.read_csv('math2015/FrcSub/q.csv')
+    n = pd.read_csv('math2015/Math1/data.csv').sample(frac=0.2)
+    # n = pd.read_csv('math2015/Math1/data.csv').head(headNum).sample(frac=0.2)
+    Q = pd.read_csv('math2015/Math1/q.csv')
     # 536*0.2个学生,20道题目
     ni, nj = n.shape
     # 20道题目，8个知识点
