@@ -8,7 +8,7 @@ import math
 '''
 
 # 用来测试少量的数据，减少计算等待时间
-headNum = 100
+headNum = 536
 # sg迭代的阈值
 threshold = 0.00001
 
@@ -139,8 +139,8 @@ def trainDINAModel():
             print('-------------------------------')
             print(str(j + 1) + '题目finish')
 
-        print(str(kk ) +"次迭代，"+str(ni)+"个学生，20道题目的失误率和猜测率")
         print(sg)
+        print(str(kk ) +"次迭代，"+str(ni)+"个学生，20道题目的失误率和猜测率")
         kk +=1
     endTime = time.time()
     print('********************************************')
@@ -258,8 +258,8 @@ def trainIDINAModel():
             print('-------------------------------')
             print(str(j + 1) + '题目finish')
 
-        print(str(kk ) +"次迭代，"+str(ni)+"个学生，20道题目的失误率和猜测率")
         print(sg)
+        print(str(kk ) +"次迭代，"+str(ni)+"个学生，20道题目的失误率和猜测率")
         kk +=1
     endTime = time.time()
     print('********************************************')
@@ -271,8 +271,8 @@ def trainIDINAModel():
 
 def testPredict():
     # 得到模型的参数，s和g
-    # sg = trainIDINAModel()
-    sg = trainDINAModel()
+    sg = trainIDINAModel()
+    # sg = trainDINAModel()
     startTime = time.time()
     print('预测开始时间：' + str(int(startTime)))
     # 测试集随机挑选20%的数据
