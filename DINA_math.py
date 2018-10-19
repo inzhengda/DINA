@@ -28,7 +28,7 @@ l表示技能模式，是int整数，范围在0~2^k-1
 说明q要求的技能向量，l这种模式都满足，即l能做对qk这道题目
 '''
 
-
+#111
 def nTrueOrFalse(qk, l):
     q =int(''.join(map(str, qk)), 2)
     if q&l == q:
