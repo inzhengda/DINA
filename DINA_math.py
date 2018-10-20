@@ -9,7 +9,7 @@ from functools import reduce
 '''
 
 # 用来测试少量的数据，减少计算等待时间
-headNum = 536
+headNum = 1000
 # sg迭代的阈值
 threshold = 0.001
 
@@ -19,18 +19,20 @@ threshold = 0.001
 计算每道题目的s失误率和g猜测率
 '''
 
-def trainDINAModel():
+def trainDINAModel(dataSet):
     startTime = time.time()
-    print('训练模型开始时间：'+str(int(startTime)))
+    print('开始训练DINA模型')
 
     # 可以使用head函数控制读取的学生数量
     # sample表示采样，frac=0.8表示随机采样80%的记录
-    # n 表示每个学生每道题目的答题情况，1表示答对，0表示答错
-    # n = pd.read_csv('math2015/Math1/data.csv').head(headNum).sample(frac=0.8).values
-    n = pd.read_csv('math2015/FrcSub/data.csv').sample(frac=0.8).values
-    # Q 表示每道题目答对需要掌握的知识点向量
-    Q = np.mat(pd.read_csv('math2015/FrcSub/q.csv'))
-    # Q = np.mat(pd.read_csv('math2015/Math1/q.csv').head(15).values)
+    if dataSet =='FrcSub':
+        # n 表示每个学生每道题目的答题情况，1表示答对，0表示答错
+        n = pd.read_csv('math2015/FrcSub/data.csv').sample(frac=0.8).values
+        # Q 表示每道题目答对需要掌握的知识点向量
+        Q = np.mat(pd.read_csv('math2015/FrcSub/q.csv'))
+    else :
+        n = pd.read_csv('math2015/Math1/data.csv').head(headNum).sample(frac=0.8).values
+        Q = np.mat(pd.read_csv('math2015/Math1/q.csv').head(15).values)
     # 536*0.8个学生,20道题目
     ni, nj = n.shape
     # 20道题目，8个知识点
@@ -100,20 +102,23 @@ def trainDINAModel():
         print(str(kk ) +"次迭代，"+str(ni)+"个学生，"+str(nj)+"道题目的失误率和猜测率")
         kk +=1
     endTime = time.time()
-    print('训练消耗时间：'+str(int(endTime-startTime))+'秒')
+    print('DINA模型训练消耗时间：'+str(int(endTime-startTime))+'秒')
     return sg,r
 
-def trainIDINAModel():
+def trainIDINAModel(dataSet):
     startTime = time.time()
-    print('训练模型开始时间：'+str(int(startTime)))
+    print('开始训练IDINA模型')
 
     # 可以使用head函数控制读取的学生数量
     # sample表示采样，frac=0.8表示随机采样80%的记录
-    # n 表示每个学生每道题目的答题情况，1表示答对，0表示答错
-    # n = pd.read_csv('math2015/FrcSub/data.csv').sample(frac=0.8)
-    n = pd.read_csv('math2015/FrcSub/data.csv').sample(frac=0.8).values
-    # Q 表示每道题目答对需要掌握的知识点向量
-    Q = np.mat(pd.read_csv('math2015/FrcSub/q.csv'))
+    if dataSet =='FrcSub':
+        # n 表示每个学生每道题目的答题情况，1表示答对，0表示答错
+        n = pd.read_csv('math2015/FrcSub/data.csv').sample(frac=0.8).values
+        # Q 表示每道题目答对需要掌握的知识点向量
+        Q = np.mat(pd.read_csv('math2015/FrcSub/q.csv'))
+    else :
+        n = pd.read_csv('math2015/Math1/data.csv').head(headNum).sample(frac=0.8).values
+        Q = np.mat(pd.read_csv('math2015/Math1/q.csv').head(15).values)
 
     # 536*0.8个学生,20道题目
     ni, nj = n.shape
@@ -190,24 +195,24 @@ def trainIDINAModel():
         print(str(kk) + "次迭代，" + str(ni) + "个学生，" + str(nj) + "道题目的失误率和猜测率")
         kk += 1
     endTime = time.time()
-    print('********************************************')
-    print('训练消耗时间：'+str(int(endTime-startTime))+'秒')
-    print('********************************************')
+    print('IDINA模型训练消耗时间：'+str(int(endTime-startTime))+'秒')
     return sg,r
 
-
-
-def testPredict():
+def testPredict(model,dataSet):
     # 得到模型的参数，s和g,
-    # sg,r = trainDINAModel()
-    sg,r = trainIDINAModel()
+    if model == 'DINA':
+        sg,r = trainDINAModel(dataSet)
+    else:
+        sg,r = trainIDINAModel(dataSet)
     startTime = time.time()
-    print('预测开始时间：' + str(int(startTime)))
+    print('预测开始')
     # 测试集随机挑选20%的数据
-    # n = pd.read_csv('math2015/Math1/data.csv').head(headNum).sample(frac=0.2).values
-    n = pd.read_csv('math2015/FrcSub/data.csv').sample(frac=0.2).values
-    Q = np.mat(pd.read_csv('math2015/FrcSub/q.csv'))
-    # Q = np.mat(pd.read_csv('math2015/Math1/q.csv').head(15).values)
+    if dataSet == 'FrcSub':
+        n = pd.read_csv('math2015/FrcSub/data.csv').sample(frac=0.2).values
+        Q = np.mat(pd.read_csv('math2015/FrcSub/q.csv'))
+    else:
+        n = pd.read_csv('math2015/Math1/data.csv').head(headNum).sample(frac=0.2).values
+        Q = np.mat(pd.read_csv('math2015/Math1/q.csv').head(15).values)
     # 536*0.2个学生,20道题目
     ni, nj = n.shape
     # 20道题目，8个知识点
@@ -226,8 +231,18 @@ def testPredict():
     print('测试集中各个学生的预测的a技能向量')
     print(a)
 
+    continuous = np.ones((ni,Qj))
+    denominator = np.sum(IL,axis=1)
+    for j in range(Qj):
+        molecule = np.zeros(ni)
+        for l in range(2**Qj):
+            ll = list(bin(l).replace('0b', ''))
+            if j<len(ll) and ll[len(ll)-j-1]=='1':
+                molecule += IL[:,l]
+        continuous[:,Qj-1-j] = molecule/denominator
 
-
+    print('连续化向量')
+    # print(continuous)
 
 
     # 计算准确率
@@ -237,9 +252,7 @@ def testPredict():
     print('预测消耗时间：' + str(int(time.time())-int(startTime))+'秒')
 
 def main():
-    testPredict()
-
-
+    testPredict('IDINA','FrcSub1')
 
 if __name__ == "__main__":
     main()
