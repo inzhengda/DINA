@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import time
+import math
 from multiprocessing import Pool
 '''
 使用公开数据集，math2015中的FrcSub
@@ -10,7 +11,7 @@ from multiprocessing import Pool
 # 用来测试少量的数据，减少计算等待时间
 multi = True
 # sg迭代的阈值
-threshold = 0.001
+threshold = 100
 
 
 '''
@@ -65,6 +66,7 @@ def trainDINAModel(n,Q):
 
     continueSG = True
     kk =1
+    lastLX = 1
     # 计算s和g迭代的次数
     # 学生*模式数 = 学生*  题目数         题目数*技能         技能*模式数
     while continueSG == True:
@@ -78,6 +80,11 @@ def trainDINAModel(n,Q):
                 multiple_results = [pool.apply_async(EStep, (IL, sg, n, r, k, i)) for i in range(4)]
                 for item in ([res.get(timeout=1000) for res in multiple_results]):
                     IL += item
+                sumIL =IL.sum(axis=1)
+                LX = np.sum([i for i in map(math.log2, sumIL)])
+                print('LX')
+                print(LX)
+                IL = (IL.T / sumIL).T
                 IR = np.zeros((4, nj))
                 multiple_results = [pool.apply_async(MStep, (IL,  n, r, k, i)) for i in range(4)]
                 for item in ([res.get(timeout=1000) for res in multiple_results]):
@@ -99,8 +106,10 @@ def trainDINAModel(n,Q):
                 IR[2] += np.sum((r.A[:,l]* n1).T*IL[:,l],axis=1)
                 IR[3] += np.sum((r.A[:,l]* n).T*IL[:,l],axis=1)
         #针对每一道题目，根据I0,R0,I1,R1，来更新s和g，更新后的sg，又重新计算似然函数矩阵IL
-        if (abs(IR[1] / IR[0] - sg[:,1])<threshold).any() and (abs((IR[2]-IR[3]) / IR[2] -sg[:,0])<threshold).any():
+        # if (abs(IR[1] / IR[0] - sg[:,1])<threshold).any() and (abs((IR[2]-IR[3]) / IR[2] -sg[:,0])<threshold).any():
+        if abs(LX-lastLX)<threshold:
             continueSG = False
+        lastLX = LX
         sg[:,1] = IR[1] / IR[0]
         sg[:,0] = (IR[2]-IR[3]) / IR[2]
         print(str(kk ) +"次迭代，"+str(ni)+"个学生，"+str(nj)+"道题目的失误率和猜测率")
@@ -186,6 +195,28 @@ def trainIDINAModel(n,Q):
     endTime = time.time()
     print('IDINA模型训练消耗时间：'+str(int(endTime-startTime))+'秒')
     return sg,r
+
+def continuously(IL):
+    ni,nj = IL.shape
+    Qj = (int)(math.log2(nj))
+    continuous = np.ones((ni, Qj))
+    denominator = np.sum(IL, axis=1)
+    for j in range(Qj):
+        molecule = np.zeros(ni)
+        for l in range(nj):
+            ll = list(bin(l).replace('0b', ''))
+            if j < len(ll) and ll[len(ll) - j - 1] == '1':
+                molecule += IL[:, l]
+        continuous[:, Qj - 1 - j] = molecule / denominator
+    return continuous
+def discrete(continuous):
+    ni,k = continuous.shape
+    a = np.zeros(ni,dtype=int)
+    for i in range(ni):
+        for ki in range(k):
+            if continuous[i][ki]>0.5:
+                a[i] += 2**(k-ki-1)
+    return a
 def predictDINA(n,Q,sg,r):
     startTime = time.time()
     print('预测开始')
@@ -211,23 +242,18 @@ def predictDINA(n,Q,sg,r):
     # 只需要在上面的IL中，针对每一个学生，寻找他在所有l模式中，似然函数最大的那一项l
     a = IL.argmax(axis=1)
 
-    continuous = np.ones((ni, Qj))
-    denominator = np.sum(IL, axis=1)
-    for j in range(Qj):
-        molecule = np.zeros(ni)
-        for l in range(2 ** Qj):
-            ll = list(bin(l).replace('0b', ''))
-            if j < len(ll) and ll[len(ll) - j - 1] == '1':
-                molecule += IL[:, l]
-        continuous[:, Qj - 1 - j] = molecule / denominator
+    # a2 = discrete(continuously(IL))
 
     # print('连续化向量')
     # print(continuous)
     # 计算准确率
     i, j = n.shape
-    print('总共有' + str(ni) + '个人，准确率为：')
+    print('总共有' + str(ni) + '个人，a准确率为：')
     p1 = np.sum((r[:, a] == n.T) * 1) / (i * j)
     print(p1)
+    # print('总共有' + str(ni) + '个人，a2准确率为：')
+    # p1 = np.sum((r[:, a2] == n.T) * 1) / (i * j)
+    # print(p1)
     print('预测消耗时间：' + str(int(time.time()) - int(startTime)) + '秒')
     print('-----------------------------------------------')
     return p1
