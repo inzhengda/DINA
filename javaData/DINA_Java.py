@@ -5,6 +5,7 @@ from collections import Counter
 
 '''
 源代码部分，筛选出成功执行完的id
+Java 大项目地数据
 '''
 root_path = 'D:\demo\DINA\judgelog'
 
