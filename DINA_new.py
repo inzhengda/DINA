@@ -36,18 +36,21 @@ def MStep(IL,n,r,k,i):
     return IR
 def trainDINAModel(n,Q):
     startTime = time.time()
-    print('staring train DINA model')
+    print('*************staring train DINA model*************')
     ni, nj = n.shape
-    Qi, k = Q.shape
-    sg = np.zeros((nj, 2))
+    Qi, Qj = Q.shape
+
+
+    k = 2
+    chunkSize = math.floor(Qj/k)
     k0 = 0
-    k1 = (int)(k/2)
+    k1 = (int)(Qj/k)
     #crate K matrix，indict k skill could get how many vector
-    K0 = np.mat(np.zeros((k1, 2 ** k1), dtype=int))
-    for j in range(2 ** k1):
+    K0 = np.mat(np.zeros((chunkSize, 2 ** chunkSize), dtype=int))
+    for j in range(2 ** chunkSize):
         l = list(bin(j).replace('0b', ''))
         for i in range(len(l)):
-            K0[k1 - len(l) + i, j] = l[i]
+            K0[chunkSize - len(l) + i, j] = l[i]
     # K1 = np.mat(np.zeros((6, 2 ** 6), dtype=int))
     # for j in range(2 ** 6):
     #     l = list(bin(j).replace('0b', ''))
@@ -64,10 +67,7 @@ def trainDINAModel(n,Q):
 
 
     # sg[i][0] indicate slip，sg[i][1] indicate guess
-    for i in range(nj):
-        sg[i][0] = 0.01
-        sg[i][1] = 0.01
-
+    sg = 0.01 * np.ones((nj, 2))
     continueSG = True
     kk =1
     lastLX = 1
@@ -114,7 +114,7 @@ def trainDINAModel(n,Q):
         print('[%s] times [%s] students [%s] problems'%(kk,ni,nj))
         kk +=1
     endTime = time.time()
-    print('DINA training time :[%s] s'%int(endTime-startTime))
+    print('DINA training time :[%.3f] s'%(endTime-startTime))
     return sg,r0,r1
 
 def trainIDINAModel(n,Q):
@@ -167,7 +167,7 @@ def trainIDINAModel(n,Q):
         print('[%s] time [%s] students [%s] problems'%(kk,ni,ni))
         kk += 1
     endTime = time.time()
-    print('IDINA model cost time: [%s] s'%int(endTime-startTime))
+    print('IDINA model cost time: [%.3f] s'%(endTime-startTime))
     return sg,r
 
 def continuously(IL):
@@ -195,7 +195,7 @@ def discrete(continuous):
 
 def predictDINA(n,Q,sg,r0,r1):
     startTime = time.time()
-    print('predicting')
+    print('---------------predicting---------------')
     ni, nj = n.shape
     Qi, Qj = Q.shape
     k = Qj
@@ -225,11 +225,11 @@ def predictDINA(n,Q,sg,r0,r1):
     r = (Q * K == std) * 1
     i, j = n.shape
     p = np.sum((r[:,a2] == n.T) * 1) / (i * j)
-    print('total [%s] people, accuracy is [%s]'%(ni, p))
-    print('predict time [%s] s' %int(time.time() - startTime))
+    print('total [%s] people, accuracy is [%.3f]'%(ni, p))
+    print('predict time [%.3f] s' %(time.time() - startTime))
     return p
 
-def testPredict(model,dataSet):
+def trainAndPredict(model,dataSet):
     print('model:[%s]   dataSet:[%s]' %(model,dataSet))
     if dataSet == 'FrcSub':
         n = pd.read_csv('math2015/FrcSub/data.csv').values
@@ -245,7 +245,7 @@ def testPredict(model,dataSet):
         exit(0)
 
     #n cross verify
-    n_splits = 5
+    n_splits = 1
     KF = KFold(n_splits=n_splits,shuffle=True)
     precision = 0
     for train_index, test_index in KF.split(n):
@@ -255,14 +255,14 @@ def testPredict(model,dataSet):
         else:
             sg,r = trainIDINAModel(X_train,Q)
         precision += predictDINA(X_test, Q, sg, r0,r1)
-    print('average precision:',precision/n_splits)
+    print('average precision: %.3f' %(precision/n_splits))
 
 def main():
     startTime = time.time()
     dataSet = ('FrcSub', 'Math1', 'Math2')
     model = ('DINA','IDINA')
-    testPredict(model[0], dataSet[0])
-    print('total cost time:[%s] s' %int(time.time()-startTime))
+    trainAndPredict(model[0], dataSet[0])
+    print('total cost time:[%.3f] s' %(time.time()-startTime))
 
 if __name__ == "__main__":
     main()
