@@ -10,6 +10,10 @@ use math2015 data,including FrcSub,Math1,Math2
 training data use 80% of total data
 '''
 
+multi = True
+# sg threshold
+threshold = 50000
+
 def EStep(IL,sg,n,r,k,i):
     base = 2**(k-2)
     for l in range(i*base,(i+1)*base):
@@ -36,16 +40,34 @@ def trainDINAModel(n,Q):
     ni, nj = n.shape
     Qi, Qj = Q.shape
 
+
+    k = 2
+    chunkSize = math.floor(Qj/k)
+    k0 = 0
+    k1 = (int)(Qj/k)
     #crate K matrix，indict k skill could get how many vector
-    K = np.mat(np.zeros((Qj, 2 ** Qj), dtype=int))
-    for j in range(2 ** Qj):
+    K0 = np.mat(np.zeros((chunkSize, 2 ** chunkSize), dtype=int))
+    for j in range(2 ** chunkSize):
         l = list(bin(j).replace('0b', ''))
         for i in range(len(l)):
-            K[Qj - len(l) + i, j] = l[i]
-    std = np.sum(Q, axis=1)
-    r = (Q * K == std) * 1
-    sg = 0.01 * np.ones((nj, 2))
+            K0[chunkSize - len(l) + i, j] = l[i]
+    # K1 = np.mat(np.zeros((6, 2 ** 6), dtype=int))
+    # for j in range(2 ** 6):
+    #     l = list(bin(j).replace('0b', ''))
+    #     for i in range(len(l)):
+    #         K1[6 - len(l) + i, j] = l[i]
+    K1 = K0
+    Q0 = Q[:,:k1]
+    Q1 = Q[:,k1:]
+    #r matrix indicate l skill vector whether could do right j problem
+    std0 = np.sum(Q0, axis=1)
+    r0 = (Q0 * K0 == std0) * 1
+    std1 = np.sum(Q1, axis=1)
+    r1 = (Q1 * K1 == std1) * 1
 
+
+    # sg[i][0] indicate slip，sg[i][1] indicate guess
+    sg = 0.01 * np.ones((nj, 2))
     continueSG = True
     kk =1
     lastLX = 1
@@ -53,51 +75,47 @@ def trainDINAModel(n,Q):
     # student*pattern = student* problem       problem*skill         skill*pattern
     while continueSG == True:
         # E step，calculate likelihood matrix
-        IL = np.zeros((ni, 2 ** Qj))
-        IR = np.zeros((4, nj))
+
+        IL = np.zeros((ni, 2 ** k1))
+        IL1 = np.zeros((ni, 2 ** k1))
         # skill pattern number
         if multi==True:
             print('multi 4 processes')
             with Pool(processes=4) as pool:
-                multiple_results = [pool.apply_async(EStep, (IL, sg, n, r, Qj, i)) for i in range(4)]
+                multiple_results = [pool.apply_async(EStep, (IL, sg, n, r0, k1, i)) for i in range(4)]
                 for item in ([res.get(timeout=1000) for res in multiple_results]):
                     IL += item
-
-                sumIL = IL.sum(axis=1)
+                sumIL =IL.sum(axis=1)
                 LX = np.sum([i for i in map(math.log2, sumIL)])
-                print('LX', LX)
-
-                IL = (IL.T / sumIL).T * aPrior
-
-                multiple_results = [pool.apply_async(MStep, (IL, n, r, Qj, i)) for i in range(4)]
+                print('LX',LX)
+                IL = (IL.T / sumIL).T
+                IR = np.zeros((4, nj))
+                multiple_results = [pool.apply_async(MStep, (IL,  n, r0, k1, i)) for i in range(4)]
                 for item in ([res.get(timeout=1000) for res in multiple_results]):
                     IR += item
-        else:
-            print('single process')
-            for l in range(2 ** Qj):
-                lll = ((1 - sg[:, 0]) ** n * sg[:, 0] ** (1 - n)) ** r.T.A[l] * (sg[:, 1] ** n * (
-                    1 - sg[:, 1]) ** (1 - n)) ** (1 - r.T.A[l])
-                IL[:, l] = lll.prod(axis=1)
-            sumIL = IL.sum(axis=1)
-            LX = np.sum([i for i in map(math.log2, sumIL)])
-            print('LX', LX)
-            IL = (IL.T / sumIL).T* aPrior
-            n1 = np.ones(n.shape)
-            for l in range(2 ** Qj):
-                IR[0] += np.sum(((1 - r.A[:, l]) * n1).T * IL[:, l], axis=1)
-                IR[1] += np.sum(((1 - r.A[:, l]) * n).T * IL[:, l], axis=1)
-                IR[2] += np.sum((r.A[:, l] * n1).T * IL[:, l], axis=1)
-                IR[3] += np.sum((r.A[:, l] * n).T * IL[:, l], axis=1)
-        if abs(LX-lastLX)<threshold:
+
+                multiple_results1 = [pool.apply_async(EStep, (IL1, sg, n, r1, k1, i)) for i in range(4)]
+                for item in ([res.get(timeout=1000) for res in multiple_results1]):
+                    IL1 += item
+                sumIL1 = IL1.sum(axis=1)
+                LX1 = np.sum([i for i in map(math.log2, sumIL1)])
+                IL1 = (IL1.T / sumIL1).T
+                print('LX1 ',LX1)
+                IR1 = np.zeros((4, nj))
+                multiple_results1 = [pool.apply_async(MStep, (IL1, n, r1, k1, i)) for i in range(4)]
+                for item in ([res.get(timeout=1000) for res in multiple_results1]):
+                    IR1 += item
+        IR = (IR+IR1)/2
+        if abs((LX+LX1)/2-lastLX)<threshold:
             continueSG = False
-        lastLX = LX
+        lastLX = (LX+LX1)/2
         sg[:,1] = IR[1] / IR[0]
         sg[:,0] = (IR[2]-IR[3]) / IR[2]
         print('[%s] times [%s] students [%s] problems'%(kk,ni,nj))
         kk +=1
     endTime = time.time()
     print('DINA training time :[%.3f] s'%(endTime-startTime))
-    return sg,r
+    return sg,r0,r1
 
 def trainIDINAModel(n,Q):
     startTime = time.time()
@@ -175,36 +193,38 @@ def discrete(continuous):
                 a[i] += 2**(k-ki-1)
     return a
 
-def predictDINA(n,Q,sg,r):
+def predictDINA(n,Q,sg,r0,r1):
     startTime = time.time()
     print('---------------predicting---------------')
     ni, nj = n.shape
     Qi, Qj = Q.shape
-    IL = np.zeros((ni, 2**Qj))
+    k = Qj
+    k1 = (int)(k / 2)
+    k2 = k-k1
+    IL = np.zeros((ni, 2**k1))
+    IL1 = np.zeros((ni, 2**k2))
     if multi == True:
         print('multi 4 processes')
         with Pool(processes=4) as pool:
-            multiple_results = [pool.apply_async(EStep, (IL, sg, n, r, Qj, i)) for i in range(4)]
+            multiple_results = [pool.apply_async(EStep, (IL, sg, n, r0, k1, i)) for i in range(4)]
             for item in ([res.get(timeout=1000) for res in multiple_results]):
                 IL += item
-    else:
-        for l in range(2 ** Qj):
-            lll = ((1 - sg[:, 0]) ** n * sg[:, 0] ** (1 - n)) ** r.T.A[l] * (sg[:, 1] ** n * (
-                1 - sg[:, 1]) ** (1 - n)) ** (1 - r.T.A[l])
-            IL[:, l] = lll.prod(axis=1)
+            multiple_results = [pool.apply_async(EStep, (IL1, sg, n, r1, k2, i)) for i in range(4)]
+            for item in ([res.get(timeout=1000) for res in multiple_results]):
+                IL1 += item
     # choose most big probability in the IL matrix for every student
     a = IL.argmax(axis=1)
-    unique, counts = np.unique(a, return_counts=True)
-    aPrior[unique] = counts/len(a)
-    K = np.mat(np.zeros((Qj, 2 ** Qj), dtype=int))
-    for j in range(2 ** Qj):
+    a1 = IL1.argmax(axis=1)
+    a2 = a*2**k2+a1
+    K = np.mat(np.zeros((k, 2 ** k), dtype=int))
+    for j in range(2 ** k):
         l = list(bin(j).replace('0b', ''))
         for i in range(len(l)):
-            K[Qj - len(l) + i, j] = l[i]
+            K[k - len(l) + i, j] = l[i]
     std = np.sum(Q, axis=1)
     r = (Q * K == std) * 1
     i, j = n.shape
-    p = np.sum((r[:,a] == n.T) * 1) / (i * j)
+    p = np.sum((r[:,a2] == n.T) * 1) / (i * j)
     print('total [%s] people, accuracy is [%.3f]'%(ni, p))
     print('predict time [%.3f] s' %(time.time() - startTime))
     return p
@@ -225,24 +245,20 @@ def trainAndPredict(model,dataSet):
         exit(0)
 
     #n cross verify
-    n_splits = 10
+    n_splits = 1
     KF = KFold(n_splits=n_splits,shuffle=True)
     precision = 0
     for train_index, test_index in KF.split(n):
         X_train, X_test = n[train_index], n[test_index]
         if model == 'DINA':
-            sg,r = trainDINAModel(X_train,Q)
+            sg,r0,r1 = trainDINAModel(X_train,Q)
         else:
             sg,r = trainIDINAModel(X_train,Q)
-        precision += predictDINA(X_test, Q, sg, r)
+        precision += predictDINA(X_test, Q, sg, r0,r1)
     print('average precision: %.3f' %(precision/n_splits))
 
 def main():
     startTime = time.time()
-    global multi,threshold,aPrior
-    threshold = 50000
-    multi = False
-    aPrior = np.ones(2 ** 8) / 10 ** 8
     dataSet = ('FrcSub', 'Math1', 'Math2')
     model = ('DINA','IDINA')
     trainAndPredict(model[0], dataSet[0])

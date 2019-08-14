@@ -10,7 +10,7 @@ from sklearn.model_selection import KFold
 '''
 
 # 用来测试少量的数据，减少计算等待时间
-multi = True
+multi = False
 # sg迭代的阈值
 threshold = 50000
 
